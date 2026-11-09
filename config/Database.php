@@ -1,16 +1,30 @@
 <?php
 class Database {
-    private $host = 'localhost';
-    private $port = '3306';
-    private $db_name = 'db_mesalibre';
-    private $username = 'root';
-    private $password = '';
     public $conn;
 
     public function getConnection() {
         $this->conn = null;
+        
+        // Obtener la URL de conexión que proporciona Render o usar valores locales
+        $database_url = getenv('DATABASE_URL');
+
         try {
-            $this->conn = new PDO("mysql:host=" . $this->host . ";port=" . $this->port . ";dbname=" . $this->db_name . ";charset=utf8mb4", $this->username, $this->password);
+            if ($database_url) {
+                // Parsear la URL de Render para extraer los datos de PostgreSQL
+                $dbopts = parse_url($database_url);
+                $host = $dbopts["host"];
+                $port = isset($dbopts["port"]) ? $dbopts["port"] : "5432";
+                $dbname = ltrim($dbopts["path"], '/');
+                $username = $dbopts["user"];
+                $password = $dbopts["pass"];
+
+                $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
+                $this->conn = new PDO($dsn, $username, $password);
+            } else {
+                // Conexión local por defecto para XAMPP (si pruebas en tu equipo)
+                $this->conn = new PDO("pgsql:host=localhost;port=5432;dbname=mesalibre", "postgres", "");
+            }
+
             $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         } catch(PDOException $exception) {
             echo "Error de conexión: " . $exception->getMessage();
